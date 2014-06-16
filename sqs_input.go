@@ -95,12 +95,12 @@ func (s *SqsInput) Run(ir InputRunner, h PluginHelper) (err error) {
       return fmt.Errorf("Decoder not found: %s", s.conf.Decoder)
     }
     decoder = dRunner.Decoder()
-    fmt.Printf("Decoder found was: %v", decoder)
   }
 
   packSupply := ir.InChan()
 
   for s.running {
+    // ir.LogMessage("Getting messages from SQS...")
     resp, err = s.queue.ReceiveMessage(10)
     if err != nil {
       ir.LogError(fmt.Errorf("Could not receive messages: %v", err))
@@ -109,7 +109,7 @@ func (s *SqsInput) Run(ir InputRunner, h PluginHelper) (err error) {
     for _, message := range resp.Messages {
       data, err := base64.StdEncoding.DecodeString(message.Body)
       if err != nil {
-        ir.LogError(fmt.Errorf("Could not decode message: %v", err))   
+        ir.LogError(fmt.Errorf("Could not decode message: %v", err))
       }
 
       pack = <-packSupply
@@ -118,17 +118,25 @@ func (s *SqsInput) Run(ir InputRunner, h PluginHelper) (err error) {
       packs, e = decoder.Decode(pack)
       if packs != nil {
         for _, p := range packs {
+          // ir.LogMessage("Injecting pack...")
           ir.Inject(p)
         }
       } else {
         if e != nil {
-          ir.LogError(fmt.Errorf("Couldn't parse SQS message: %s", message.Body))
+          ir.LogError(fmt.Errorf("Couldn't parse SQS message: %s - %v", message.Body, e))
         }
       }
 
-      pack.Recycle()
+      // ir.LogMessage("Deleting message from SQS...")
+      _, err = s.queue.DeleteMessage(&message)
+      if err != nil {
+        ir.LogError(fmt.Errorf("Could not delete message: %v - %v", message, err))
+      }
+
+      // ir.LogMessage("Done.")
     }
   }
+
   return
 }
 

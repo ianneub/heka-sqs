@@ -80,8 +80,6 @@ func (s *SqsOutput) Init(config interface{}) (err error) {
 func (s *SqsOutput) Run(or OutputRunner, h PluginHelper) (err error) {
   var (
     pack     *PipelinePack
-    // persist  uint8
-    // ok       bool = true
     outBytes []byte
     inChan chan *PipelinePack = or.InChan()
   )
@@ -93,7 +91,7 @@ func (s *SqsOutput) Run(or OutputRunner, h PluginHelper) (err error) {
 
   for pack = range inChan {
     if outBytes, err = s.encoder.Encode(pack); err != nil {
-      or.LogError(fmt.Errorf("Error encoding message: %s", err))
+      or.LogError(fmt.Errorf("Error encoding message: %v", err))
       pack.Recycle()
       continue
     }
