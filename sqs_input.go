@@ -16,7 +16,6 @@ package sqs
 
 import (
   "encoding/base64"
-  // "errors"
   "fmt"
   . "github.com/mozilla-services/heka/pipeline"
   "github.com/crowdmob/goamz/sqs"
@@ -81,7 +80,6 @@ func (s *SqsInput) Init(config interface{}) (err error) {
 
 func (s *SqsInput) Run(ir InputRunner, h PluginHelper) (err error) {
   var (
-    dRunner DecoderRunner
     decoder Decoder
     pack    *PipelinePack
     e       error
@@ -91,10 +89,9 @@ func (s *SqsInput) Run(ir InputRunner, h PluginHelper) (err error) {
   )
 
   if s.conf.Decoder != "" {
-    if dRunner, ok = h.DecoderRunner(s.conf.Decoder, fmt.Sprintf("%s-%s", ir.Name(), s.conf.Decoder)); !ok {
+    if decoder, ok = h.PipelineConfig().Decoder(s.conf.Decoder); !ok {
       return fmt.Errorf("Decoder not found: %s", s.conf.Decoder)
     }
-    decoder = dRunner.Decoder()
   }
 
   packSupply := ir.InChan()
