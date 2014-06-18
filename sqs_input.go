@@ -95,6 +95,9 @@ func (s *SqsInput) Run(ir InputRunner, h PluginHelper) (err error) {
 
   packSupply := ir.InChan()
 
+  // create a wait group
+  var wg sync.WaitGroup
+
   for s.running {
     // ir.LogMessage("Getting messages from SQS...")
     resp, err = s.queue.ReceiveMessage(10)
@@ -102,11 +105,10 @@ func (s *SqsInput) Run(ir InputRunner, h PluginHelper) (err error) {
       ir.LogError(fmt.Errorf("Could not receive messages: %v", err))
     }
 
-    // create a wait group
-    var wg sync.WaitGroup
-
     for _, message := range resp.Messages {
       pack = <-packSupply
+
+      wg.Add(1)
       go s.processMessage(&message, ir, h, pack, decoder, &wg)
     }
 
@@ -118,8 +120,6 @@ func (s *SqsInput) Run(ir InputRunner, h PluginHelper) (err error) {
 }
 
 func (s *SqsInput) processMessage(message *sqs.Message, ir InputRunner, h PluginHelper, pack *PipelinePack, decoder Decoder, wg  *sync.WaitGroup) {
-  wg.Add(1)
-
   var (
     packs   []*PipelinePack
     err     error
