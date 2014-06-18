@@ -109,17 +109,18 @@ func (s *SqsInput) Run(ir InputRunner, h PluginHelper) (err error) {
       pack = <-packSupply
 
       wg.Add(1)
-      go s.processMessage(&message, ir, h, pack, decoder, &wg)
+      go s.processMessage(message, ir, h, pack, decoder, &wg)
     }
 
     // wait for each goroutine to exit
+    // ir.LogMessage("Waiting...")
     wg.Wait()
   }
 
   return
 }
 
-func (s *SqsInput) processMessage(message *sqs.Message, ir InputRunner, h PluginHelper, pack *PipelinePack, decoder Decoder, wg  *sync.WaitGroup) {
+func (s *SqsInput) processMessage(message sqs.Message, ir InputRunner, h PluginHelper, pack *PipelinePack, decoder Decoder, wg  *sync.WaitGroup) {
   var (
     packs   []*PipelinePack
     err     error
@@ -145,9 +146,11 @@ func (s *SqsInput) processMessage(message *sqs.Message, ir InputRunner, h Plugin
   }
 
   // ir.LogMessage("Deleting message from SQS...")
-  _, err = s.queue.DeleteMessage(message)
+  _, err = s.queue.DeleteMessage(&message)
   if err != nil {
     ir.LogError(fmt.Errorf("Could not delete message: %v - %v", message, err))
+  } else {
+    // ir.LogMessage(fmt.Sprintf("Deleted message: %v", message.MessageId))
   }
 
   // ir.LogMessage("Done.")
