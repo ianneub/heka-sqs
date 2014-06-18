@@ -19,6 +19,7 @@ import (
   "fmt"
   . "github.com/mozilla-services/heka/pipeline"
   "github.com/crowdmob/goamz/sqs"
+  "sync"
 )
 
 type SqsInput struct {
@@ -82,10 +83,8 @@ func (s *SqsInput) Run(ir InputRunner, h PluginHelper) (err error) {
   var (
     decoder Decoder
     pack    *PipelinePack
-    e       error
     ok      bool
     resp    *sqs.ReceiveMessageResponse
-    packs   []*PipelinePack
   )
 
   if s.conf.Decoder != "" {
@@ -103,38 +102,56 @@ func (s *SqsInput) Run(ir InputRunner, h PluginHelper) (err error) {
       ir.LogError(fmt.Errorf("Could not receive messages: %v", err))
     }
 
+    // create a wait group
+    var wg sync.WaitGroup
+
     for _, message := range resp.Messages {
-      data, err := base64.StdEncoding.DecodeString(message.Body)
-      if err != nil {
-        ir.LogError(fmt.Errorf("Could not decode message: %v", err))
-      }
-
       pack = <-packSupply
-      pack.MsgBytes = data
-
-      packs, e = decoder.Decode(pack)
-      if packs != nil {
-        for _, p := range packs {
-          // ir.LogMessage("Injecting pack...")
-          ir.Inject(p)
-        }
-      } else {
-        if e != nil {
-          ir.LogError(fmt.Errorf("Couldn't parse SQS message: %s - %v", message.Body, e))
-        }
-      }
-
-      // ir.LogMessage("Deleting message from SQS...")
-      _, err = s.queue.DeleteMessage(&message)
-      if err != nil {
-        ir.LogError(fmt.Errorf("Could not delete message: %v - %v", message, err))
-      }
-
-      // ir.LogMessage("Done.")
+      go s.processMessage(&message, ir, h, pack, decoder, &wg)
     }
+
+    // wait for each goroutine to exit
+    wg.Wait()
   }
 
   return
+}
+
+func (s *SqsInput) processMessage(message *sqs.Message, ir InputRunner, h PluginHelper, pack *PipelinePack, decoder Decoder, wg  *sync.WaitGroup) {
+  wg.Add(1)
+
+  var (
+    packs   []*PipelinePack
+    err     error
+  )
+
+  data, err := base64.StdEncoding.DecodeString(message.Body)
+  if err != nil {
+    ir.LogError(fmt.Errorf("Could not decode message: %v", err))
+  }
+
+  pack.MsgBytes = data
+
+  packs, err = decoder.Decode(pack)
+  if packs != nil {
+    for _, p := range packs {
+      // ir.LogMessage("Injecting pack...")
+      ir.Inject(p)
+    }
+  } else {
+    if err != nil {
+      ir.LogError(fmt.Errorf("Couldn't parse SQS message: %s - %v", message.Body, err))
+    }
+  }
+
+  // ir.LogMessage("Deleting message from SQS...")
+  _, err = s.queue.DeleteMessage(message)
+  if err != nil {
+    ir.LogError(fmt.Errorf("Could not delete message: %v - %v", message, err))
+  }
+
+  // ir.LogMessage("Done.")
+  wg.Done()
 }
 
 func (s *SqsInput) Stop() {
