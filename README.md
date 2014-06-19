@@ -4,7 +4,7 @@ This is an input and output plugin that enables sending messages to and receivin
 
 ## Status
 
-This plugin is a work in progress and is not ready for production use. Please give it a test though and feel free to open an [issue](issues).
+This plugin is a work in progress and is not ready for production use. Please give it a test though and feel free to open an [issue](https://github.com/ianneub/heka-sqs/issues).
 
 ## How to use
 
