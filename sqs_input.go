@@ -126,6 +126,8 @@ func (s *SqsInput) processMessage(message sqs.Message, ir InputRunner, h PluginH
     err     error
   )
 
+  defer wg.Done()
+
   data, err := base64.StdEncoding.DecodeString(message.Body)
   if err != nil {
     ir.LogError(fmt.Errorf("Could not decode message: %v", err))
@@ -154,7 +156,6 @@ func (s *SqsInput) processMessage(message sqs.Message, ir InputRunner, h PluginH
   }
 
   // ir.LogMessage("Done.")
-  wg.Done()
 }
 
 func (s *SqsInput) Stop() {
