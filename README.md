@@ -2,6 +2,10 @@
 
 This is an input and output plugin that enables sending messages to and receiving messages from [SQS](http://aws.amazon.com/sqs/) in [Heka](https://github.com/mozilla-services/heka).
 
+## Status
+
+This plugin is a work in progress and is not ready for production use. Please give it a test though and feel free to open an [issue](issues).
+
 ## How to use
 
 To use either plugin you will need to add this project to your Heka source code by adding a line to `cmake/plugin_loader.cmake` that will load the plugin, like this:
