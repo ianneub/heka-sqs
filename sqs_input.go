@@ -18,7 +18,7 @@ import (
   "encoding/base64"
   "fmt"
   . "github.com/mozilla-services/heka/pipeline"
-  "github.com/crowdmob/goamz/sqs"
+  "github.com/AdRoll/goamz/sqs"
   "sync"
 )
 
@@ -45,7 +45,7 @@ type SqsInputConfig struct {
 func (s *SqsInput) ConfigStruct() interface{} {
   return &SqsInputConfig{
     Decoder: "ProtobufDecoder",
-    Region: "us.east",
+    Region: "us-east-1",
   }
 }
 

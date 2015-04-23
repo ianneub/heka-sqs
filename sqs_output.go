@@ -19,7 +19,7 @@ import (
   "errors"
   "fmt"
   . "github.com/mozilla-services/heka/pipeline"
-  "github.com/crowdmob/goamz/sqs"
+  "github.com/AdRoll/goamz/sqs"
 )
 
 type SqsOutput struct {
@@ -44,7 +44,7 @@ type SqsOutputConfig struct {
 func (s *SqsOutput) ConfigStruct() interface{} {
   return &SqsOutputConfig{
     Encoder: "ProtobufEncoder",
-    Region: "us.east",
+    Region: "us-east-1",
   }
 }
 
