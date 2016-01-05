@@ -92,7 +92,7 @@ func (s *SqsOutput) Run(or OutputRunner, h PluginHelper) (err error) {
   for pack = range inChan {
     if outBytes, err = s.encoder.Encode(pack); err != nil {
       or.LogError(fmt.Errorf("Error encoding message: %v", err))
-      pack.Recycle()
+      pack.Recycle(nil)
       continue
     }
 
@@ -100,11 +100,11 @@ func (s *SqsOutput) Run(or OutputRunner, h PluginHelper) (err error) {
     _, err = s.queue.SendMessage(base64.StdEncoding.EncodeToString(outBytes))
     if err != nil {
       or.LogError(fmt.Errorf("Could not send SQS message: %v", err))
-      pack.Recycle()
+      pack.Recycle(nil)
       continue
     }
 
-    pack.Recycle()
+    pack.Recycle(nil)
   }
   return
 }
